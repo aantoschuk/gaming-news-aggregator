@@ -2,9 +2,10 @@
 package parse_url
 
 import (
-	"errors"
 	"net/url"
 	"strings"
+
+	"github.com/aantoschuk/feed/internal/apperr"
 )
 
 // PraseUrl function parses the provided URL string and returns the parsed string.
@@ -13,21 +14,35 @@ import (
 //
 // It would return an empty string and an error variable if error happened.
 func ParseUrl(raw string) (string, error) {
-	if strings.TrimSpace(raw)== "" {
-		errEmptyString := errors.New("passed an empty url")
+	if strings.TrimSpace(raw) == "" {
+		errEmptyString := apperr.NewUserError(
+			"passed an empty url",
+			"EMPTY_STRING_VALUE",
+			1)
 		return "", errEmptyString
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
-		return "", err
+		errParseUrl := apperr.NewInternalError(
+			"cannot parse raw url",
+			"LIBRARY_ERROR",
+			1,
+			err)
+		return "", errParseUrl
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		errBadScheme := errors.New("bad URL scheme. Proper scheme should have 'http' or 'https'")
+		errBadScheme := apperr.NewUserError(
+			"bad URL scheme. Proper scheme should have http or https",
+			"INVALID_VALUE",
+			1)
 		return "", errBadScheme
 	}
 
 	if u.Host == "" {
-		errNoHost := errors.New("URL is missing a host")
+		errNoHost := apperr.NewUserError(
+			"url is missing a host",
+			"INVALID_VALUE",
+			1)
 		return "", errNoHost
 	}
 

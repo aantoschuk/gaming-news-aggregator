@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/spf13/cobra"
 )
 
@@ -25,7 +26,13 @@ var rootCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		url, err := cmd.Flags().GetString("url")
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Hello")
+			appErr := apperr.NewInternalError("cannot retrieve -u flag", "RETRIEVE_U_FLAG_EROR", 1, err)
+			fmt.Println(appErr)
+		}
+		if url == "" {
+			fmt.Println(apperr.ErrMissingRequiredFlag)
+			os.Exit(1)
 		}
 		fmt.Println(url)
 		return nil
