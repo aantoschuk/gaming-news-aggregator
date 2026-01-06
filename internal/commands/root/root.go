@@ -23,7 +23,11 @@ var rootCmd = &cobra.Command{
 	links and metadata so you can quickly see what's new and decide what to read on
 	the original site. It is designed to be fast, lightweight.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Println("Root command")
+		url, err := cmd.Flags().GetString("url")
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(url)
 		return nil
 	},
 }
@@ -38,5 +42,6 @@ func Execute() {
 }
 
 func init() {
-	// initialize flags here
+	// i prefer to have a shorthand along with the full flag name
+	rootCmd.Flags().StringP("url", "u", "", "Provide url to aggregate")
 }
