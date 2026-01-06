@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aantoschuk/feed/internal/app_logger"
 	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/spf13/cobra"
 )
@@ -24,17 +25,20 @@ var rootCmd = &cobra.Command{
 	links and metadata so you can quickly see what's new and decide what to read on
 	the original site. It is designed to be fast, lightweight.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		url, err := cmd.Flags().GetString("url")
+		logger := app_logger.NewAppLogger(false)
+		flags, err := retrieveFlags(cmd)
 		if err != nil {
-			fmt.Println("Hello")
 			appErr := apperr.NewInternalError("cannot retrieve -u flag", "RETRIEVE_U_FLAG_EROR", 1, err)
-			fmt.Println(appErr)
+			logger.Error(appErr)
 		}
-		if url == "" {
-			fmt.Println(apperr.ErrMissingRequiredFlag)
-			os.Exit(1)
+		logger.SetVerbose(flags.v)
+		logger.Info("executing root command")
+
+		if err != nil {
+			logger.Error(err)
 		}
-		fmt.Println(url)
+
+		fmt.Println(flags.u)
 		return nil
 	},
 }
@@ -49,6 +53,9 @@ func Execute() {
 }
 
 func init() {
+	t := false
+	rootCmd.PersistentFlags().BoolVarP(&t, "verbose", "v", false,
+		"Enables verbose mode in the app. Which displays all the messages with the full error information.")
 	// i prefer to have a shorthand along with the full flag name
 	rootCmd.Flags().StringP("url", "u", "", "Provide url to aggregate")
 }
