@@ -29,16 +29,22 @@ var rootCmd = &cobra.Command{
 		flags, err := retrieveFlags(cmd)
 		if err != nil {
 			appErr := apperr.NewInternalError("cannot retrieve -u flag", "RETRIEVE_U_FLAG_EROR", 1, err)
-			logger.Error(appErr)
+			return appErr
 		}
 		logger.SetVerbose(flags.v)
 		logger.Info("executing root command")
 
+		articles, err := RetrieveHTML(flags.u)
+
 		if err != nil {
 			logger.Error(err)
+			return err
+		}
+		for _, a := range articles {
+			fmt.Println(a)
+			fmt.Println()
 		}
 
-		fmt.Println(flags.u)
 		return nil
 	},
 }
