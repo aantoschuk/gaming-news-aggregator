@@ -16,7 +16,6 @@ import (
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/aantoschuk/feed/internal/engine"
 	"github.com/aantoschuk/feed/internal/extractors"
-	"github.com/go-rod/rod"
 	"github.com/spf13/cobra"
 )
 
@@ -39,22 +38,19 @@ var rootCmd = &cobra.Command{
 		logger.SetVerbose(flags.v)
 		logger.Info("executing root command")
 
-		browser := rod.New().MustConnect()
-		defer browser.MustClose()
-
 		ign := &extractors.IGNExtractor{
 			URL:      "https://www.ign.com/news",
 			WaitTime: 1 * time.Second,
 			Logger:   logger,
 		}
 		en := engine.Engine{Extractors: []domain.Extractor{ign}, Logger: logger}
-		posts, err := en.Extract()
+		articles, err := en.Extract()
 		if err != nil {
 			return err
 		}
 
-		for _, p := range posts {
-			fmt.Println(p)
+		for _, a := range articles {
+			fmt.Println(a)
 			fmt.Println()
 		}
 
