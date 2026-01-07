@@ -9,9 +9,14 @@ package root
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/aantoschuk/feed/internal/app_logger"
 	"github.com/aantoschuk/feed/internal/apperr"
+	"github.com/aantoschuk/feed/internal/domain"
+	"github.com/aantoschuk/feed/internal/engine"
+	"github.com/aantoschuk/feed/internal/extractors"
+	"github.com/go-rod/rod"
 	"github.com/spf13/cobra"
 )
 
@@ -34,14 +39,22 @@ var rootCmd = &cobra.Command{
 		logger.SetVerbose(flags.v)
 		logger.Info("executing root command")
 
-		articles, err := RetrieveHTML(flags.u)
+		browser := rod.New().MustConnect()
+		defer browser.MustClose()
 
+		ign := &extractors.IGNExtractor{
+			URL:      "https://www.ign.com/news",
+			WaitTime: 1 * time.Second,
+			Logger:   logger,
+		}
+		en := engine.Engine{Extractors: []domain.Extractor{ign}, Logger: logger}
+		posts, err := en.Extract()
 		if err != nil {
-			logger.Error(err)
 			return err
 		}
-		for _, a := range articles {
-			fmt.Println(a)
+
+		for _, p := range posts {
+			fmt.Println(p)
 			fmt.Println()
 		}
 
@@ -60,8 +73,8 @@ func Execute() {
 
 func init() {
 	t := false
+
+	// i prefer to have a shorthand along with the full flag name
 	rootCmd.PersistentFlags().BoolVarP(&t, "verbose", "v", false,
 		"Enables verbose mode in the app. Which displays all the messages with the full error information.")
-	// i prefer to have a shorthand along with the full flag name
-	rootCmd.Flags().StringP("url", "u", "", "Provide url to aggregate")
 }

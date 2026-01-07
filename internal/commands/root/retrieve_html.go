@@ -1,49 +1,50 @@
 package root
 
 import (
-	"strings"
+	"time"
 
-	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
 )
 
 // RetrieveHTML scraps html content from the page.
 // Accepts url as a string, return an error.
-func RetrieveHTML(url string) ([]article, error) {
+func RetrieveHTML(browser *rod.Browser, url string) (string, error) {
 
-	s := strings.Split(url, "/")
-	cleared := strings.Join(s[:len(s)-1], "/")
-	browser := rod.New().MustConnect()
-	defer browser.MustClose()
-
-	opts := proto.TargetCreateTarget{
-		URL: url,
-	}
-	page, err := browser.Page(opts)
-	var articles []article
+	page, err := loadPage(browser, url)
 	if err != nil {
-		if strings.Contains(err.Error(), "ERR_INTERNET_DISCONNECTED") {
-			return articles, apperr.ErrNoInternetConnection
-		}
-		appErr := apperr.NewInternalError("cannot create a tab", "LIBRARY_ERROR", 1, err)
-		return articles, appErr
+		return "", err
 	}
 
-	page = page.MustWaitStable()
+	html, err := page.HTML()
 	if err != nil {
-		appErr := apperr.NewInternalError("error while waiting a stable page", "LIBRARY_ERROR", 1, err)
-		return articles, appErr
+		return "", err
 	}
 
-	elements, err := page.Elements(".item-body")
+	return html, nil
+}
+
+// TODO: refactor. Handle all errors. Make more modular,
+
+func loadPage(browser *rod.Browser, url string) (*rod.Page, error) {
+	page, err := browser.Page(proto.TargetCreateTarget{URL: url})
 	if err != nil {
-		appErr := apperr.NewInternalError("cannot get the element", "LIBRARY_ERROR", 1, err)
-		return articles, appErr
+		return nil, err
 	}
 
+	if err := page.WaitStable(1 * time.Second); err != nil {
+		return nil, err
+	}
+
+	return page, nil
+}
+
+/*
+func getArticles(url string, elements rod.Elements) []article {
 	t := article{}
+	var articles []article
 
+	cleared := stripUrl(url)
 	for _, a := range elements {
 
 		href, err := a.Attribute("href")
@@ -63,8 +64,6 @@ func RetrieveHTML(url string) ([]article, error) {
 		t.title = text
 		articles = append(articles, t)
 	}
-
-	return articles, nil
+	return articles
 }
-
-// TODO: refactor. Handle all errors. Make more modular, 
+*/
