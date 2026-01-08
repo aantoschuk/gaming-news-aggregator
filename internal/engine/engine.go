@@ -4,6 +4,7 @@ package engine
 
 import (
 	"github.com/aantoschuk/feed/internal/app_logger"
+	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
@@ -35,15 +36,17 @@ func (e *Engine) Extract() ([]domain.Article, error) {
 
 		// prepare page in the browser
 		page, err := browser.Page(proto.TargetCreateTarget{URL: url})
-		defer page.MustClose()
 		if err != nil {
-			return nil, err
+			appErr := apperr.NewInternalError("something happened during openning the page", "OPEN_TAB_ERROR", 1, err)
+			return nil, appErr
 		}
+		defer page.MustClose()
 
 		// get articles from the page
 		extracted, err := ex.Extract(page)
 		if err != nil {
 			return nil, err
+
 		}
 
 		articles = append(articles, extracted...)

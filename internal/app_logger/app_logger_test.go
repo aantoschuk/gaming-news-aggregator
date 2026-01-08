@@ -10,18 +10,14 @@ import (
 	"github.com/aantoschuk/feed/internal/apperr"
 )
 
-func newTestLogger(verbose bool) (*AppLogger, *bytes.Buffer) {
+func newTestLogger(mode string) (*AppLogger, *bytes.Buffer) {
 	buf := &bytes.Buffer{}
-	var handler slog.Handler
-	if verbose {
-		handler = slog.NewJSONHandler(buf, nil)
-	} else {
-		handler = loggerHandler(buf)
+	l := &AppLogger{
+		logger: slog.New(loggerHandler(buf)),
 	}
-	return &AppLogger{
-		logger:  slog.New(handler),
-		verbose: verbose,
-	}, buf
+
+	l.SetMode(mode)
+	return l, buf
 }
 
 func TestAppLogger_Error_AppErr(t *testing.T) {
@@ -33,7 +29,7 @@ func TestAppLogger_Error_AppErr(t *testing.T) {
 		Err:        fmt.Errorf("underlying error"),
 	}
 
-	logger, buf := newTestLogger(true) // verbose mode
+	logger, buf := newTestLogger("info")
 	logger.Error(appErr)
 
 	out := buf.String()
@@ -53,7 +49,7 @@ func TestAppLogger_Error_AppErr_NonVerbose(t *testing.T) {
 		Err:        fmt.Errorf("underlying error"),
 	}
 
-	logger, buf := newTestLogger(false) // non-verbose
+	logger, buf := newTestLogger("basic")
 	logger.Error(appErr)
 
 	out := buf.String()
@@ -64,7 +60,7 @@ func TestAppLogger_Error_AppErr_NonVerbose(t *testing.T) {
 
 func TestAppLogger_Error_NonAppErr(t *testing.T) {
 	err := fmt.Errorf("simple error")
-	logger, buf := newTestLogger(true)
+	logger, buf := newTestLogger("basic")
 	logger.Error(err)
 
 	out := buf.String()
@@ -74,16 +70,15 @@ func TestAppLogger_Error_NonAppErr(t *testing.T) {
 }
 
 func TestAppLogger_SetVerbose(t *testing.T) {
-	logger, buf := newTestLogger(false)
-	if logger.verbose != false {
+	logger, buf := newTestLogger("basic")
+	if logger.mode != "basic" {
 		t.Fatal("expected verbose=false initially")
 	}
 
-	logger.SetVerbose(true)
-	if logger.verbose != true {
+	logger.SetMode("info")
+	if logger.mode != "info" {
 		t.Fatal("SetVerbose did not update verbose flag")
 	}
-
 	appErr := &apperr.AppErr{Message: "error!"}
 	logger.Error(appErr)
 
@@ -94,17 +89,19 @@ func TestAppLogger_SetVerbose(t *testing.T) {
 }
 
 func TestAppLogger_InfoDebug(t *testing.T) {
-	logger, buf := newTestLogger(false)
+	logger, buf := newTestLogger("error")
 	logger.Info("info message")
 	logger.Debug("debug message")
 	if buf.Len() != 0 {
 		t.Fatal("non-verbose Info/Debug should not log")
 	}
 
-	logger.SetVerbose(true)
+	logger.SetMode("debug")
 	logger.Info("info message")
 	logger.Debug("debug message")
 	out := buf.String()
+
+	t.Log("out")
 	t.Log(out)
 	if !strings.Contains(out, "info message") || !strings.Contains(out, "debug message") {
 		t.Fatalf("verbose Info/Debug logging failed, got: %s", out)
