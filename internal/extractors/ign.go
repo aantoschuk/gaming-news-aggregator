@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aantoschuk/feed/internal/app_logger"
+	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/go-rod/rod"
 )
@@ -25,13 +26,15 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 
 	// wait until page loads
 	if err := page.WaitStable(i.WaitTime); err != nil {
-		return nil, err
+		appErr := apperr.NewInternalError("something happened during wait for page load.", "PAGE_STABLE_ERROR", 1, err)
+		return nil, appErr
 	}
 
 	//	get list of elemets with articles
 	elements, err := page.Elements(".item-body")
 	if err != nil {
-		return nil, err
+		appErr := apperr.NewInternalError("cannot retrieve elemets from the page", "ELEMENTS_RETRIEVAL_ERROR", 1, err)
+		return nil, appErr
 	}
 
 	// get base url for the ign, to later get something like  ign/article
@@ -45,21 +48,25 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		// get link to the full article
 		href, err := a.Attribute("href")
 		if err != nil || href == nil {
+			i.Logger.Debug("retrieve attribute error: " + err.Error())
 			continue
 		}
 
 		// retrieve nested components
 		divs, err := a.Elements("div")
 		if err != nil || len(divs) < 2 {
+			i.Logger.Debug("selecting nested div err: " + err.Error())
 			continue
 		}
 
 		span, err := divs[1].Element("span")
 		if err != nil {
+			i.Logger.Debug("selecting nested span err: " + err.Error())
 			continue
 		}
 		text, err := span.Text()
 		if err != nil {
+			i.Logger.Debug("retrieving span text err: " + err.Error())
 			continue
 		}
 
