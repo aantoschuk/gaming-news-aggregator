@@ -17,11 +17,39 @@ along with this program. If not, see <www.gnu.org>.
 package main
 
 import (
-	"github.com/aantoschuk/feed/internal/commands/root"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/aantoschuk/feed/internal"
+	"github.com/aantoschuk/feed/internal/domain"
+	"github.com/aantoschuk/feed/internal/engine"
+	"github.com/aantoschuk/feed/internal/extractors"
 )
 
 func main() {
-	root.Execute()
+
+	d, v := internal.HandleFlags()
+	logger := internal.SetupLogger(d, v)
+
+	ign := &extractors.IGNExtractor{
+		URL:      "https://www.ign.com/news",
+		WaitTime: 1 * time.Second,
+		Logger:   logger,
+	}
+
+	en := engine.Engine{Extractors: []domain.Extractor{ign}, Logger: logger}
+	articles, err := en.Extract()
+	if err != nil {
+		logger.Error(err)
+		os.Exit(1)
+	}
+
+	for _, a := range articles {
+		fmt.Println(a)
+		fmt.Println()
+	}
+
 }
 
 // TODO: fill readme.md
