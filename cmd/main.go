@@ -28,7 +28,6 @@ import (
 )
 
 func main() {
-
 	d, v := internal.HandleFlags()
 	logger := internal.SetupLogger(d, v)
 
@@ -38,7 +37,7 @@ func main() {
 		Logger:   logger,
 	}
 
-	en := engine.Engine{Extractors: []domain.Extractor{ign}, Logger: logger}
+	en := engine.Engine{Extractors: []domain.Extractor{ign}, Logger: logger, Debug: d}
 	articles, err := en.Extract()
 	if err != nil {
 		logger.Error(err)

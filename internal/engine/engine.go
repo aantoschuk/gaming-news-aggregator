@@ -3,10 +3,13 @@
 package engine
 
 import (
+	"time"
+
 	"github.com/aantoschuk/feed/internal/app_logger"
 	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
 )
 
@@ -16,6 +19,12 @@ type Engine struct {
 	Extractors []domain.Extractor
 	// App logger to display messages.
 	Logger *app_logger.AppLogger
+	// Enables debug mode which removes headless browser.
+	Debug bool
+	// controls how much slow motion would be
+	//TODO: Not sure SlowMotion is needed at all, as there is no browser acttions.
+	// To slow retrieving content, better to use sleep in the Extractor itself.
+	SlowMotion time.Duration
 }
 
 // Extract function prepare browser, page and runs specific Extractors.
@@ -25,7 +34,19 @@ type Engine struct {
 // if error occured, function returns nil and an error variable of type error.
 func (e *Engine) Extract() ([]domain.Article, error) {
 	// start a new browser process
-	browser := rod.New().MustConnect()
+	var browser *rod.Browser
+
+	if e.Debug {
+		l := launcher.New().Headless(false).Devtools(true)
+
+		defer l.Cleanup()
+		url := l.MustLaunch()
+		browser = rod.New().ControlURL(url).Trace(true).SlowMotion(e.SlowMotion).MustConnect()
+
+	} else {
+		browser = rod.New().MustConnect()
+	}
+
 	defer browser.Close()
 
 	articles := []domain.Article{}
