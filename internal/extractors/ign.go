@@ -33,18 +33,33 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 	//	get list of elemets with articles
 	elements, err := page.Elements(".item-body")
 	if err != nil {
-		appErr := apperr.NewInternalError("cannot retrieve elemets from the page", "ELEMENTS_RETRIEVAL_ERROR", 1, err)
+		appErr := apperr.NewInternalError("cannot retrieve elemenets from the page", "ELEMENTS_RETRIEVAL_ERROR", 1, err)
 		return nil, appErr
+	}
+
+	i.Logger.Info("start scrolling")
+
+	for range 2 {
+		page.Mouse.Scroll(0, 300., 4)
+		page.WaitIdle(2 * time.Second)
+
+		newEls, err := page.Elements(".item-body")
+		if err != nil {
+			appErr := apperr.NewInternalError("cannot retrieve elemenets from the page", "ELEMENTS_RETRIEVAL_ERROR", 1, err)
+			return nil, appErr
+		}
+		elements = append(elements, newEls...)
 	}
 
 	// get base url for the ign, to later get something like  ign/article
 	// instead of ign/news/article
 	// for some reason they decide to do that way
 	clearU := stripUrl(i.URL)
-	articles := []domain.Article{}
+	articles := make([]domain.Article, 30, 30)
 
+	i.Logger.Info("normalizing content")
 	// iterate over all elements
-	for _, a := range elements {
+	for idx, a := range elements {
 		// get link to the full article
 		href, err := a.Attribute("href")
 		if err != nil || href == nil {
@@ -53,25 +68,26 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		}
 
 		// retrieve nested components
-		divs, err := a.Elements("div")
-		if err != nil || len(divs) < 2 {
-			i.Logger.Debug("selecting nested div err: " + err.Error())
+		spanStack, err := a.Elements("span")
+
+		if err != nil {
+			i.Logger.Debug("retrieve attribute error: " + err.Error())
 			continue
 		}
 
-		span, err := divs[1].Element("span")
-		if err != nil {
-			i.Logger.Debug("selecting nested span err: " + err.Error())
-			continue
-		}
+		span := spanStack[1]
+
 		text, err := span.Text()
+		title := strings.Split(text, "\n")[0]
+
 		if err != nil {
-			i.Logger.Debug("retrieving span text err: " + err.Error())
+			i.Logger.Debug("cannot get post title: " + err.Error())
 			continue
 		}
 
 		link := clearU + *href
-		articles = append(articles, domain.Article{Url: link, Title: text})
+		articles[idx] = domain.Article{Url: link, Title: title}
+
 	}
 
 	i.Logger.Info("ign extractor work done")
@@ -82,10 +98,4 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 // Function getter to get url.
 func (i *IGNExtractor) Url() string {
 	return i.URL
-}
-
-// remove /news from the url
-func stripUrl(raw string) string {
-	s := strings.Split(raw, "/")
-	return strings.Join(s[:len(s)-1], "/")
 }

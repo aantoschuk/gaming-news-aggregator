@@ -37,7 +37,13 @@ func main() {
 		Logger:   logger,
 	}
 
-	en := engine.Engine{Extractors: []domain.Extractor{ign}, Logger: logger, Debug: d}
+	gamespot := &extractors.GamespotExtractor{
+		URL:      "https://www.gamespot.com/news",
+		WaitTime: 1 * time.Second,
+		Logger:   logger,
+	}
+
+	en := engine.Engine{Extractors: []domain.Extractor{gamespot, ign}, Logger: logger, Debug: d, MaxConcurrentJobs: 2}
 	articles, err := en.Extract()
 	if err != nil {
 		logger.Error(err)
@@ -48,7 +54,6 @@ func main() {
 		fmt.Println(a)
 		fmt.Println()
 	}
-
 }
 
 // TODO: fill readme.md
