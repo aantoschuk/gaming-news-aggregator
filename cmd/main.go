@@ -32,7 +32,7 @@ func main() {
 	logger := internal.SetupLogger(d, v)
 
 	ign := &extractors.IGNExtractor{
-		URL:      "https://www.ign.com/news",
+		URL:      "https://www.ign.com/news/",
 		WaitTime: 1 * time.Second,
 		Logger:   logger,
 	}
@@ -43,7 +43,13 @@ func main() {
 		Logger:   logger,
 	}
 
-	en := engine.Engine{Extractors: []domain.Extractor{gamespot, ign}, Logger: logger, Debug: d, MaxConcurrentJobs: 2}
+	params := engine.CreateEngineParams{
+		Logger:     logger,
+		Extractors: []domain.Extractor{ign, gamespot},
+	}
+
+	en := engine.CreateEngine(params)
+
 	articles, err := en.Extract()
 	if err != nil {
 		logger.Error(err)
@@ -55,5 +61,3 @@ func main() {
 		fmt.Println()
 	}
 }
-
-// TODO: fill readme.md

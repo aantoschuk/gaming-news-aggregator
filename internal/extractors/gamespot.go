@@ -30,7 +30,7 @@ func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 
 	l := len(elements)
 	articles := make([]domain.Article, l, l)
-	clearU := stripUrl(g.URL)
+	clearU, nil := stripUrlFromSuffix(g.URL, "news")
 
 	for idx, a := range elements {
 		href, err := a.Attribute("href")
@@ -47,7 +47,7 @@ func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 			continue
 		}
 
-		link := clearU + *href
+		link := *clearU + *href
 		article := domain.Article{
 			Url:   link,
 			Title: title,

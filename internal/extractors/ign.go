@@ -7,6 +7,7 @@ import (
 
 	"github.com/aantoschuk/feed/internal/app_logger"
 	"github.com/aantoschuk/feed/internal/apperr"
+	"github.com/aantoschuk/feed/internal/browser"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/go-rod/rod"
 )
@@ -30,36 +31,20 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		return nil, appErr
 	}
 
-	//	get list of elemets with articles
-	elements, err := page.Elements(".item-body")
+	elements, err := browser.InfiniteScroll(page, 2, 1000, 1*time.Second, ".item-body")
 	if err != nil {
-		appErr := apperr.NewInternalError("cannot retrieve elemenets from the page", "ELEMENTS_RETRIEVAL_ERROR", 1, err)
-		return nil, appErr
-	}
-
-	i.Logger.Info("start scrolling")
-
-	for range 2 {
-		page.Mouse.Scroll(0, 300., 4)
-		page.WaitIdle(2 * time.Second)
-
-		newEls, err := page.Elements(".item-body")
-		if err != nil {
-			appErr := apperr.NewInternalError("cannot retrieve elemenets from the page", "ELEMENTS_RETRIEVAL_ERROR", 1, err)
-			return nil, appErr
-		}
-		elements = append(elements, newEls...)
+		return nil, err
 	}
 
 	// get base url for the ign, to later get something like  ign/article
 	// instead of ign/news/article
 	// for some reason they decide to do that way
-	clearU := stripUrl(i.URL)
-	articles := make([]domain.Article, 30, 30)
+	clearU, err := stripUrlFromSuffix(i.URL, "news")
+	articles := []domain.Article{}
 
 	i.Logger.Info("normalizing content")
 	// iterate over all elements
-	for idx, a := range elements {
+	for _, a := range elements {
 		// get link to the full article
 		href, err := a.Attribute("href")
 		if err != nil || href == nil {
@@ -85,8 +70,8 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 			continue
 		}
 
-		link := clearU + *href
-		articles[idx] = domain.Article{Url: link, Title: title}
+		link := *clearU + *href
+		articles = append(articles, domain.Article{Url: link, Title: title})
 
 	}
 
