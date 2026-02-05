@@ -26,21 +26,23 @@ Currently supported sources:
 
 ### Basic Usage
 
+Just execute binary:
+
 ```bash
-go run cmd/main.go
+./game-news-aggregator
 ```
 ### Verbose mode 
 Verbose mode is prints messages when while executing:
 
 ```bash
-go run cmd/main.go -v
+./game-news-aggregator -v
 ```
 ### Debug Mode
 Debug mode is primarly for the troubleshooting, as it prints debug messages, 
 and runs browser with headless mode off:
 
 ```bash
-go run cmd/main.go -d
+./game-news-aggregator -d
 ```
 
 ### Combined Mode
