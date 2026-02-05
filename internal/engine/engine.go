@@ -27,6 +27,7 @@ type Engine struct {
 	// To slow retrieving content, better to use sleep in the Extractor itself.
 	SlowMotion time.Duration
 
+	// Accepts a created row browser which will later open pages for every passed extractor
 	BrowserFactory func() (*rod.Browser, error)
 }
 

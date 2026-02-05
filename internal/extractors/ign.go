@@ -22,16 +22,16 @@ type IGNExtractor struct {
 // Extract function is implementation of Extract interface.
 // It accepts page, extract all articles from the page
 // and return them back to the engine.
-func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
-	i.Logger.Info("starting ign extractor")
+func (e *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
+	e.Logger.Info("starting ign extractor")
 
 	// wait until page loads
-	if err := page.WaitStable(i.WaitTime); err != nil {
+	if err := page.WaitStable(e.WaitTime); err != nil {
 		appErr := apperr.NewInternalError("something happened during wait for page load.", "PAGE_STABLE_ERROR", 1, err)
 		return nil, appErr
 	}
 
-	elements, err := browser.InfiniteScroll(page, 2, 1000, 1*time.Second, ".item-body")
+	elements, err := browser.InfiniteScroll(page, 3, 1000, 1*time.Second, ".item-body")
 	if err != nil {
 		return nil, err
 	}
@@ -39,16 +39,22 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 	// get base url for the ign, to later get something like  ign/article
 	// instead of ign/news/article
 	// for some reason they decide to do that way
-	clearU, err := stripUrlFromSuffix(i.URL, "news")
-	articles := []domain.Article{}
+	clearU, err := stripUrlFromSuffix(e.URL, "news")
+	articles := make([]domain.Article, 0, len(elements))
 
-	i.Logger.Info("normalizing content")
+	e.Logger.Info("normalizing content")
 	// iterate over all elements
 	for _, a := range elements {
 		// get link to the full article
 		href, err := a.Attribute("href")
-		if err != nil || href == nil {
-			i.Logger.Debug("retrieve attribute error: " + err.Error())
+
+		if err != nil {
+			e.Logger.Debug("retrieve attribute error: " + err.Error())
+			continue
+		}
+
+		if href == nil {
+			e.Logger.Debug("href is nil")
 			continue
 		}
 
@@ -56,26 +62,28 @@ func (i *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		spanStack, err := a.Elements("span")
 
 		if err != nil {
-			i.Logger.Debug("retrieve attribute error: " + err.Error())
+			e.Logger.Debug("retrieve attribute error: " + err.Error())
 			continue
 		}
 
+		if len(spanStack) < 2 {
+			continue
+		}
 		span := spanStack[1]
 
 		text, err := span.Text()
 		title := strings.Split(text, "\n")[0]
 
 		if err != nil {
-			i.Logger.Debug("cannot get post title: " + err.Error())
+			e.Logger.Debug("cannot get post title: " + err.Error())
 			continue
 		}
 
 		link := *clearU + *href
 		articles = append(articles, domain.Article{Url: link, Title: title})
-
 	}
 
-	i.Logger.Info("ign extractor work done")
+	e.Logger.Info("ign extractor work done")
 	return articles, nil
 }
 

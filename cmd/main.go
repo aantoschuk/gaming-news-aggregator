@@ -37,11 +37,11 @@ func main() {
 		Logger:   logger,
 	}
 
-	gamespot := &extractors.GamespotExtractor{
-		URL:      "https://www.gamespot.com/news",
-		WaitTime: 1 * time.Second,
-		Logger:   logger,
-	}
+		gamespot := &extractors.GamespotExtractor{
+			URL:      "https://www.gamespot.com/news",
+			WaitTime: 1 * time.Second,
+			Logger:   logger,
+		}
 
 	params := engine.CreateEngineParams{
 		Logger:     logger,
@@ -57,6 +57,9 @@ func main() {
 	}
 
 	for _, a := range articles {
+		if a.Title == "" {
+			continue
+		}
 		fmt.Println(a)
 		fmt.Println()
 	}
