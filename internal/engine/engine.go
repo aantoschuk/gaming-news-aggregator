@@ -5,7 +5,6 @@ package engine
 import (
 	"time"
 
-	"github.com/aantoschuk/feed/internal/app_logger"
 	"github.com/aantoschuk/feed/internal/browser"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/go-rod/rod"
@@ -15,8 +14,6 @@ import (
 type Engine struct {
 	// slice of the all Extractors which would be runned.
 	Extractors []domain.Extractor
-	// App logger to display messages.
-	Logger *app_logger.AppLogger
 	// Controls how many extractors will work at the same time. Default value is 1.
 	// If value is bigger then 1, it means that the multiple extractors will run.
 	// Value cannot be bigger then the amount of passed extractors,
@@ -32,7 +29,6 @@ type Engine struct {
 }
 
 type CreateEngineParams struct {
-	Logger            *app_logger.AppLogger
 	Extractors        []domain.Extractor
 	MaxConcurrentJobs int
 	SlowMotion        time.Duration
@@ -53,7 +49,6 @@ func CreateEngine(params CreateEngineParams) *Engine {
 
 	en := Engine{
 		Extractors:        params.Extractors,
-		Logger:            params.Logger,
 		MaxConcurrentJobs: concurrency,
 		BrowserFactory:    factory,
 		SlowMotion:        params.SlowMotion,

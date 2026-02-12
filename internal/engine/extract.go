@@ -42,10 +42,8 @@ func extractContent(ex domain.Extractor, browser *rod.Browser) ([]domain.Article
 func (e *Engine) Extract() ([]domain.Article, error) {
 	browser, err := e.BrowserFactory()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to start a browser: %v", err)
 	}
-	defer browser.Close()
-
 	defer browser.Close()
 
 	articlesCh := make(chan []domain.Article, len(e.Extractors))
@@ -88,7 +86,7 @@ func (e *Engine) Extract() ([]domain.Article, error) {
 		errMsgs = append(errMsgs, err.Error())
 	}
 	if len(errMsgs) > 0 {
-		return articles, fmt.Errorf("extraction errors: %s", strings.Join(errMsgs, "; "))
+		return articles, fmt.Errorf("extraction errors: %s", strings.Join(errMsgs, ";\n"))
 	}
 
 	return articles, nil

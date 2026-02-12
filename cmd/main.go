@@ -21,30 +21,24 @@ import (
 	"os"
 	"time"
 
-	"github.com/aantoschuk/feed/internal"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/aantoschuk/feed/internal/engine"
 	"github.com/aantoschuk/feed/internal/extractors"
 )
 
 func main() {
-	d, v := internal.HandleFlags()
-	logger := internal.SetupLogger(d, v)
 
 	ign := &extractors.IGNExtractor{
 		URL:      "https://www.ign.com/news/",
 		WaitTime: 1 * time.Second,
-		Logger:   logger,
 	}
 
-		gamespot := &extractors.GamespotExtractor{
-			URL:      "https://www.gamespot.com/news",
-			WaitTime: 1 * time.Second,
-			Logger:   logger,
-		}
+	gamespot := &extractors.GamespotExtractor{
+		URL:      "https://www.gamespot.com/news",
+		WaitTime: 1 * time.Second,
+	}
 
 	params := engine.CreateEngineParams{
-		Logger:     logger,
 		Extractors: []domain.Extractor{ign, gamespot},
 	}
 
@@ -52,7 +46,7 @@ func main() {
 
 	articles, err := en.Extract()
 	if err != nil {
-		logger.Error(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
@@ -64,3 +58,6 @@ func main() {
 		fmt.Println()
 	}
 }
+
+// TODO: debug more not working properly.
+// Creates process but not opening the actually window
