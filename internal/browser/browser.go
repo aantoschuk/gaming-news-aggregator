@@ -3,7 +3,6 @@ package browser
 import (
 	"time"
 
-	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
 )
@@ -34,13 +33,7 @@ func InfiniteScroll(page *rod.Page, scrolls int, scrollPixels float64, waitPerSc
 
 	elements, err := page.Elements(selector)
 	if err != nil {
-		return nil, apperr.NewInternalError(
-			"cannot retrieve elements from the page",
-			"ELEMENTS_RETRIEVAL_ERROR",
-			1,
-			err,
-		)
-	}
-
+			return nil, err
+		}
 	return elements, nil
 }

@@ -1,10 +1,9 @@
 package extractors
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/aantoschuk/feed/internal/app_logger"
-	"github.com/aantoschuk/feed/internal/apperr"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/go-rod/rod"
 )
@@ -12,20 +11,18 @@ import (
 type GamespotExtractor struct {
 	URL      string
 	WaitTime time.Duration
-	Logger   *app_logger.AppLogger
 }
 
 func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
-	g.Logger.Info("gamestop extractor started ")
+	fmt.Println("START: gamestop extractor")
+
 	if err := page.WaitStable(g.WaitTime); err != nil {
-		appErr := apperr.NewInternalError("something happened during wait time for gamespot page loading", "PAGE_STABLE_ERROR", 1, err)
-		return nil, appErr
+		return nil, fmt.Errorf("unexpected error during page loading: %v", err)
 	}
 
 	elements, err := page.Elements(".card-item__link")
 	if err != nil {
-		appErr := apperr.NewInternalError("cannot retrieve elements from the gamespot page", "ELEMENT_RETRIEVAL_ERROR", 1, err)
-		return nil, appErr
+		return nil, fmt.Errorf("failed to retrieve elements: %v", err)
 	}
 
 	l := len(elements)
@@ -56,7 +53,7 @@ func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		articles[idx] = article
 	}
 
-	g.Logger.Info("gamespot extracting done")
+	fmt.Println("DONE: gamestop extractor")
 	return articles, nil
 }
 

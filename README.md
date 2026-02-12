@@ -1,7 +1,7 @@
 # Gaming News Aggregator
 
 A Go-based CLI application that scrapes and aggregates gaming news articles from multiple sources including IGN and GameSpot.
-![Go Version](https://img.shields.io/badge/Go-1.25.1+-blue.svg)
+![Go Version](https://img.shields.io/badge/Go-1.26.0+-blue.svg)
 ![License](https://img.shields.io/badge/License-GPL%20v3-green.svg)
 
 ## About 
