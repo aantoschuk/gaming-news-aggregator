@@ -32,6 +32,7 @@ type CreateEngineParams struct {
 	Extractors        []domain.Extractor
 	MaxConcurrentJobs int
 	SlowMotion        time.Duration
+	Debug             bool
 }
 
 // CreateEngine function allocates
@@ -40,11 +41,16 @@ func CreateEngine(params CreateEngineParams) *Engine {
 		panic("engine requires at least one extractor")
 	}
 
-	concurrency := max(params.MaxConcurrentJobs, 1)
-	concurrency = min(concurrency, len(params.Extractors))
+	n := len(params.Extractors)
+	concurrency := params.MaxConcurrentJobs
+	if concurrency == 0 {
+		concurrency = n
+	} else if params.MaxConcurrentJobs != 1 && params.MaxConcurrentJobs > n {
+		concurrency = n
+	}
 
 	factory := func() (*rod.Browser, error) {
-		return browser.InitBrowser(0, false), nil
+		return browser.InitBrowser(0, params.Debug), nil
 	}
 
 	en := Engine{

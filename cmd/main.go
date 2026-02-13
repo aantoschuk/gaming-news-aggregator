@@ -21,12 +21,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/aantoschuk/feed/internal"
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/aantoschuk/feed/internal/engine"
 	"github.com/aantoschuk/feed/internal/extractors"
 )
 
 func main() {
+
+	d, _ := internal.HandleFlags()
 
 	ign := &extractors.IGNExtractor{
 		URL:      "https://www.ign.com/news/",
@@ -40,6 +43,7 @@ func main() {
 
 	params := engine.CreateEngineParams{
 		Extractors: []domain.Extractor{ign, gamespot},
+		Debug:      d,
 	}
 
 	en := engine.CreateEngine(params)
@@ -59,5 +63,7 @@ func main() {
 	}
 }
 
-// TODO: debug more not working properly.
-// Creates process but not opening the actually window
+// TODO: right now, if there is any errors, it exists app with the status 1.
+// The problem is that it doesn't consider that it may be that only part of the Extractors failed and the rest
+// successfully retrieved content. Need to check how many errors we got and compare to the amount of Extractors
+// then print articles. Only after that show errors.
