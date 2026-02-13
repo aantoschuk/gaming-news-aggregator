@@ -12,8 +12,7 @@ import (
 func InitBrowser(delay time.Duration, isDebug bool) *rod.Browser {
 	var browser *rod.Browser
 	if isDebug {
-		l := launcher.New().Headless(false).Devtools(true)
-		defer l.Cleanup()
+		l := launcher.New().Headless(false).NoSandbox(true).Devtools(true)
 		url := l.MustLaunch()
 		browser = rod.New().ControlURL(url).Trace(true).SlowMotion(delay).MustConnect()
 	} else {
@@ -33,7 +32,7 @@ func InfiniteScroll(page *rod.Page, scrolls int, scrollPixels float64, waitPerSc
 
 	elements, err := page.Elements(selector)
 	if err != nil {
-			return nil, err
-		}
+		return nil, err
+	}
 	return elements, nil
 }

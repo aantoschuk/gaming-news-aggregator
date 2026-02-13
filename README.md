@@ -32,6 +32,9 @@ Just execute binary:
 ./game-news-aggregator
 ```
 ### Verbose mode 
+
+> Currently there is no usage in the verbose mode.
+
 Verbose mode is prints messages when while executing:
 
 ```bash
@@ -80,8 +83,6 @@ url: https://www.gamespot.com/articles/new-gen-console-leaked
 - `internal/engine/` - Runner and orchestrator of different extractors with worker pool logic.
 - `internal/extractors/` - Site-specific extractors.
 - `internal/domain/` - Models and interfaces.
-- `internal/apperr/` - Structured error handling
-- `internal/app_logger/` - Configurable logging
 - `internal/browser/`  - Row browser creation and other functions which help to work with pages.
 
 ## License

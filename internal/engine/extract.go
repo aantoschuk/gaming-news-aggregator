@@ -7,7 +7,6 @@ import (
 
 	"github.com/aantoschuk/feed/internal/domain"
 	"github.com/go-rod/rod"
-	"github.com/go-rod/rod/lib/proto"
 )
 
 type extractResult struct {
@@ -15,22 +14,47 @@ type extractResult struct {
 	err      error
 }
 
-func extractContent(ex domain.Extractor, browser *rod.Browser) ([]domain.Article, error) {
-	url := ex.Url()
+func workerPool(ex []domain.Extractor, n int, articlesCh chan<- []domain.Article, errCh chan<- error, browser *rod.Browser) {
+	var wg sync.WaitGroup
+	wg.Add(len(ex))
 
-	page, err := browser.Page(proto.TargetCreateTarget{URL: url})
+	ch := make(chan domain.Extractor)
 
-	if err != nil {
-		return nil, err
+	for i := 0; i < n; i++ {
+		go func() {
+			for extractor := range ch {
+				articles, err := worker(extractor, browser)
+				if err != nil {
+					errCh <- fmt.Errorf("extractor failed: %v, with error: %w", extractor.Url(), err)
+				}
+				articlesCh <- articles
+				wg.Done()
+			}
+		}()
 	}
 
+	for _, e := range ex {
+		ch <- e
+	}
+
+	close(ch)
+
+	go func() {
+		wg.Wait()
+		close(articlesCh)
+		close(errCh)
+	}()
+}
+
+func worker(ex domain.Extractor, browser *rod.Browser) ([]domain.Article, error) {
+	url := ex.Url()
+	page := browser.MustPage(url)
 	defer page.MustClose()
 
 	extracted, err := ex.Extract(page)
 	if err != nil {
 		return nil, err
 	}
-
 	return extracted, nil
 }
 
@@ -45,48 +69,32 @@ func (e *Engine) Extract() ([]domain.Article, error) {
 		return nil, fmt.Errorf("failed to start a browser: %v", err)
 	}
 	defer browser.Close()
+	n := len(e.Extractors)
 
-	articlesCh := make(chan []domain.Article, len(e.Extractors))
-	errCh := make(chan error, len(e.Extractors))
-	sem := make(chan struct{}, e.MaxConcurrentJobs)
+	articlesCh := make(chan []domain.Article)
+	errCh := make(chan error, n)
+	workerPool(e.Extractors, e.MaxConcurrentJobs, articlesCh, errCh, browser)
 
-	var wg sync.WaitGroup
+	var errors []string
 
-	for _, ex := range e.Extractors {
-		wg.Add(1)
-		ex := ex
-
-		go func() {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-
-			extracted, err := extractContent(ex, browser)
-			if err != nil {
-				errCh <- fmt.Errorf("extractor %v failed: %w", ex.Url(), err)
-				return
-			}
-			articlesCh <- extracted
-		}()
-	}
-
-	wg.Wait()
-	close(articlesCh)
-	close(errCh)
+	done := make(chan struct{})
+	go func() {
+		for err := range errCh {
+			errors = append(errors, err.Error())
+		}
+		close(done)
+	}()
 
 	// collect articles
-	var articles []domain.Article
+	articles := make([]domain.Article, 0, n*2)
 	for a := range articlesCh {
 		articles = append(articles, a...)
 	}
 
-	// error handling
-	var errMsgs []string
-	for err := range errCh {
-		errMsgs = append(errMsgs, err.Error())
-	}
-	if len(errMsgs) > 0 {
-		return articles, fmt.Errorf("extraction errors: %s", strings.Join(errMsgs, ";\n"))
+	<-done
+	if len(errors) > 0 {
+		// TODO: change to string builder
+		return articles, fmt.Errorf("extraction errors: %s", strings.Join(errors, ";\n"))
 	}
 
 	return articles, nil
