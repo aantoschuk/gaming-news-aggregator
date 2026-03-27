@@ -25,11 +25,14 @@ func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		return nil, fmt.Errorf("failed to retrieve elements: %v", err)
 	}
 
-	l := len(elements)
-	articles := make([]domain.Article, l, l)
-	clearU, nil := stripUrlFromSuffix(g.URL, "news")
+	clearU, err := stripUrlFromSuffix(g.URL, "news")
+	if err != nil {
+		return nil, fmt.Errorf("failed to strip URL suffix: %v", err)
+	}
 
-	for idx, a := range elements {
+	articles := make([]domain.Article, 0, len(elements))
+
+	for _, a := range elements {
 		href, err := a.Attribute("href")
 		if err != nil {
 			continue
@@ -50,7 +53,7 @@ func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 			Title: title,
 		}
 
-		articles[idx] = article
+		articles = append(articles, article)
 	}
 
 	fmt.Println("DONE: gamestop extractor")
