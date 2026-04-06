@@ -14,7 +14,7 @@ type extractResult struct {
 	err      error
 }
 
-func workerPool(ex []domain.Extractor, n int, articlesCh chan<- []domain.Article, errCh chan<- error, browser *rod.Browser) {
+func workerPool(ex []domain.Extractor, n int, articlesCh chan<- []domain.Article, errCh chan<- error, browser *rod.Browser, profiler *Profiler) {
 	var wg sync.WaitGroup
 	wg.Add(len(ex))
 
@@ -23,7 +23,7 @@ func workerPool(ex []domain.Extractor, n int, articlesCh chan<- []domain.Article
 	for i := 0; i < n; i++ {
 		go func() {
 			for extractor := range ch {
-				articles, err := worker(extractor, browser)
+				articles, err := worker(extractor, browser, profiler)
 				if err != nil {
 					errCh <- fmt.Errorf("extractor failed: %v, with error: %w", extractor.Url(), err)
 				}
@@ -46,14 +46,20 @@ func workerPool(ex []domain.Extractor, n int, articlesCh chan<- []domain.Article
 	}()
 }
 
-func worker(ex domain.Extractor, browser *rod.Browser) ([]domain.Article, error) {
+func worker(ex domain.Extractor, browser *rod.Browser, profiler *Profiler) ([]domain.Article, error) {
 	url := ex.Url()
 	page := browser.MustPage(url)
 	defer page.MustClose()
 
+	if profiler != nil {
+		profiler.Start(ex.Name())
+	}
 	extracted, err := ex.Extract(page)
 	if err != nil {
 		return nil, err
+	}
+if profiler != nil {
+		profiler.End(ex.Name())
 	}
 	return extracted, nil
 }
@@ -73,7 +79,11 @@ func (e *Engine) Extract() ([]domain.Article, error) {
 
 	articlesCh := make(chan []domain.Article)
 	errCh := make(chan error, n)
-	workerPool(e.Extractors, e.MaxConcurrentJobs, articlesCh, errCh, browser)
+	var profiler *Profiler
+	if e.Profiler {
+		profiler = NewProfiler()
+	}
+	workerPool(e.Extractors, e.MaxConcurrentJobs, articlesCh, errCh, browser, profiler)
 
 	var errors []string
 
