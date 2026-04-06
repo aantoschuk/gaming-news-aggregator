@@ -12,27 +12,13 @@ import (
 
 // Engine defines an object which collects Extractors and runs them.
 type Engine struct {
-	// slice of the all Extractors which would be runned.
-	Extractors []domain.Extractor
-	// Controls how many extractors will work at the same time. Default value is 1.
-	// If value is bigger then 1, it means that the multiple extractors will run.
-	// Value cannot be bigger then the amount of passed extractors,
-	// otherwise it will be set to that amount.
-	MaxConcurrentJobs int
-	// controls how much slow motion would be
-	//TODO: Not sure SlowMotion is needed at all, as there is no browser acttions.
-	// To slow retrieving content, better to use sleep in the Extractor itself.
-	SlowMotion time.Duration
-
-	// Accepts a created row browser which will later open pages for every passed extractor
-	BrowserFactory func() (*rod.Browser, error)
-}
-
-type CreateEngineParams struct {
 	Extractors        []domain.Extractor
 	MaxConcurrentJobs int
 	SlowMotion        time.Duration
-	Debug             bool
+	Profiler          bool
+
+	// Accepts a created row browser which will later open pages for every passed extractor
+	BrowserFactory func() (*rod.Browser, error)
 }
 
 // CreateEngine function allocates
@@ -57,7 +43,8 @@ func CreateEngine(params CreateEngineParams) *Engine {
 		Extractors:        params.Extractors,
 		MaxConcurrentJobs: concurrency,
 		BrowserFactory:    factory,
-		SlowMotion:        params.SlowMotion,
+		SlowMotion:        params.Browser.SlowMotion,
+		Profiler:          params.Profiler.IsEnabled,
 	}
 
 	return &en

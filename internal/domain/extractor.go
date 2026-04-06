@@ -13,4 +13,5 @@ import (
 type Extractor interface {
 	Extract(page *rod.Page) ([]Article, error)
 	Url() string
+	Name() string
 }

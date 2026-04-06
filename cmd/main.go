@@ -29,21 +29,25 @@ import (
 
 func main() {
 
-	d, _ := internal.HandleFlags()
+	d, _, p := internal.HandleFlags()
 
 	ign := &extractors.IGNExtractor{
-		URL:      "https://www.ign.com/news/",
-		WaitTime: 1 * time.Second,
+		URL:           "https://www.ign.com/news/",
+		WaitTime:      1 * time.Second,
+		ExtractorName: "IGN",
 	}
 
 	gamespot := &extractors.GamespotExtractor{
-		URL:      "https://www.gamespot.com/news",
-		WaitTime: 1 * time.Second,
+		URL:           "https://www.gamespot.com/news",
+		WaitTime:      1 * time.Second,
+		ExtractorName: "GameStop",
 	}
 
 	params := engine.CreateEngineParams{
-		Extractors: []domain.Extractor{ign, gamespot},
-		Debug:      d,
+		Extractors:        []domain.Extractor{ign, gamespot},
+		Debug:             d,
+		MaxConcurrentJobs: 2,
+		Profiler:          engine.ProfilerOptions{IsEnabled: p},
 	}
 
 	en := engine.CreateEngine(params)
@@ -67,3 +71,5 @@ func main() {
 // The problem is that it doesn't consider that it may be that only part of the Extractors failed and the rest
 // successfully retrieved content. Need to check how many errors we got and compare to the amount of Extractors
 // then print articles. Only after that show errors.
+
+// TODO: allow to add timeouts to the extractors. So that they would not hanging for long.

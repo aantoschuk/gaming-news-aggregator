@@ -9,13 +9,12 @@ import (
 )
 
 type GamespotExtractor struct {
-	URL      string
-	WaitTime time.Duration
+	URL           string
+	WaitTime      time.Duration
+	ExtractorName string
 }
 
 func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
-	fmt.Println("START: gamestop extractor")
-
 	if err := page.WaitStable(g.WaitTime); err != nil {
 		return nil, fmt.Errorf("unexpected error during page loading: %v", err)
 	}
@@ -27,7 +26,10 @@ func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 
 	l := len(elements)
 	articles := make([]domain.Article, l, l)
-	clearU, nil := stripUrlFromSuffix(g.URL, "news")
+	clearU, err := stripUrlFromSuffix(g.URL, "news")
+	if err != nil {
+		return nil, fmt.Errorf("cannot nornalize url: %w", err)
+	}
 
 	for idx, a := range elements {
 		href, err := a.Attribute("href")
@@ -53,10 +55,13 @@ func (g *GamespotExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		articles[idx] = article
 	}
 
-	fmt.Println("DONE: gamestop extractor")
 	return articles, nil
 }
 
 func (g *GamespotExtractor) Url() string {
 	return g.URL
+}
+
+func (g *GamespotExtractor) Name() string {
+	return g.ExtractorName
 }

@@ -13,16 +13,15 @@ import (
 
 // IGNExtractor defines specific Extractor
 type IGNExtractor struct {
-	URL      string
-	WaitTime time.Duration
+	URL           string
+	WaitTime      time.Duration
+	ExtractorName string
 }
 
 // Extract function is implementation of Extract interface.
 // It accepts page, extract all articles from the page
 // and return them back to the engine.
 func (e *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
-	fmt.Println("START: ign extractor")
-
 	// wait until page loads
 	if err := page.WaitStable(e.WaitTime); err != nil {
 		return nil, fmt.Errorf("unexpected error during page loading: %v", err)
@@ -37,7 +36,12 @@ func (e *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 	// instead of ign/news/article
 	// for some reason they decide to do that way
 	clearU, err := stripUrlFromSuffix(e.URL, "news")
-	articles := make([]domain.Article, 0, len(elements))
+	if err != nil {
+		return nil, fmt.Errorf("cannot nornalize url: %w", err)
+	}
+
+	l := len(elements)
+	articles := make([]domain.Article, l, l)
 
 	// iterate over all elements
 	for _, a := range elements {
@@ -75,7 +79,6 @@ func (e *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 		articles = append(articles, domain.Article{Url: link, Title: title})
 	}
 
-	fmt.Println("DONE: ign extractor")
 	return articles, nil
 }
 
@@ -83,4 +86,10 @@ func (e *IGNExtractor) Extract(page *rod.Page) ([]domain.Article, error) {
 // Function getter to get url.
 func (i *IGNExtractor) Url() string {
 	return i.URL
+}
+
+// Name satisfies Extractor interface.
+// Function getter to get extractor name.
+func (i *IGNExtractor) Name() string {
+	return i.ExtractorName
 }
